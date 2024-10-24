@@ -19,7 +19,10 @@ export default function Page() {
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+  const currentProducts = products.slice(
+    indexOfFirstProduct,
+    indexOfLastProduct
+  );
 
   const totalPages = Math.ceil(products.length / productsPerPage);
 
@@ -47,29 +50,14 @@ export default function Page() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4">Products</h1>
-      {status === "succeeded" && totalPages > 1 && (
-        <div className="flex justify-center mb-4">
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i + 1}
-              onClick={() => paginate(i + 1)}
-              className={`mx-1 px-3 py-2 border rounded-lg ${currentPage === i + 1
-                ? "bg-blue-500 text-white"
-                : "bg-white text-blue-500"
-                } hover:bg-blue-400 hover:text-white transition-all duration-300`}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
-      )}
+      <h1 className="text-3xl text-primary justify-center text-center font-bold mb-4 mt-8">
+        Products Available
+      </h1>
       {status === "loading" && (
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
         </div>
       )}
-
       {status === "failed" && <p>Error: {error}</p>}
 
       {status === "succeeded" && (
@@ -89,6 +77,24 @@ export default function Page() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {status === "succeeded" && totalPages > 1 && (
+        <div className="flex justify-center mb-4">
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => paginate(i + 1)}
+              className={`mx-1 px-3 py-2 rounded-lg ${
+                currentPage === i + 1
+                  ? "bg-primary text-black"
+                  : "bg-transparent text-primary"
+              } hover:bg-hover hover:text-black transition-all duration-300`}
+            >
+              {i + 1}
+            </button>
+          ))}
         </div>
       )}
     </div>

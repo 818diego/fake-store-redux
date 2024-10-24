@@ -48,20 +48,20 @@ export default function Navbar() {
     return (
         <>
             <div
-                className={`bg-white fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+                className={`bg-secondary fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
                     isScrolled ? "backdrop-blur-md" : ""
                 }`}>
                 <div className="container mx-auto p-4 flex justify-between items-center">
                     <h1 className="text-3xl font-bold">
                         <Link
                             href="/"
-                            className="text-gray-800 hover:text-gray-600">
+                            className="text-primary hover:text-hover">
                             Fake Store
                         </Link>
                     </h1>
                     <div className="flex space-x-6">
                         {categories.map((category) => (
-                            <span key={category}>
+                            <span key={category} className="text-primary hover:text-hover">
                                 <Link href={`/category/${category}`}>
                                     {category}
                                 </Link>
@@ -69,7 +69,7 @@ export default function Navbar() {
                         ))}
                         <button
                             onClick={toggleModal}
-                            className="relative text-gray-800 hover:text-gray-600">
+                            className="relative text-primary hover:text-hover">
                             <BsCart2 size={24} />
                             {totalItems > 0 && (
                                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
