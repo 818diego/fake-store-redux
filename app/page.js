@@ -13,46 +13,78 @@ export default function Page() {
   const error = useSelector((state) => state.products.error);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 6;
-  const [animationDirection, setAnimationDirection] = useState("none");
-  const [isSliding, setIsSliding] = useState(false);
+  const [productsPerPage, setProductsPerPage] = useState(8);
+  const [numberOfColumns, setNumberOfColumns] = useState(4);
 
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = products.slice(
-    indexOfFirstProduct,
-    indexOfLastProduct
-  );
+  const getNumberOfColumns = () => {
+    const width = window.innerWidth;
+    if (width >= 1024) {
+      return 4;
+    } else if (width >= 768) {
+      return 3;
+    } else if (width >= 640) {
+      return 2;
+    } else {
+      return 1;
+    }
+  };
 
-  const totalPages = Math.ceil(products.length / productsPerPage);
+  useEffect(() => {
+    const updateColumnsAndProductsPerPage = () => {
+      const cols = getNumberOfColumns();
+      setNumberOfColumns(cols);
+      setProductsPerPage(cols * 2);
+    };
+
+    if (typeof window !== 'undefined') {
+      updateColumnsAndProductsPerPage();
+      window.addEventListener('resize', updateColumnsAndProductsPerPage);
+      return () => {
+        window.removeEventListener('resize', updateColumnsAndProductsPerPage);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     if (status === "idle") {
       dispatch(fetchProducts());
+      setCurrentPage(1);
     }
   }, [status, dispatch]);
 
-  const paginate = (pageNumber) => {
-    if (pageNumber !== currentPage && !isSliding) {
-      setAnimationDirection(pageNumber > currentPage ? "right" : "left");
-      setIsSliding(true);
 
-      setTimeout(() => {
-        setCurrentPage(pageNumber);
-        setIsSliding(false);
-        window.scrollTo({
-          top: 0,
-          behavior: "smooth",
-        });
-      }, 500);
+  useEffect(() => {
+    const newTotalPages = Math.ceil(products.length / productsPerPage);
+    if (currentPage > newTotalPages) {
+      setCurrentPage(newTotalPages);
+    }
+  }, [productsPerPage, products.length, currentPage]);
+
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+
+  const totalPages = Math.ceil(products.length / productsPerPage);
+
+  const paginate = (pageNumber) => {
+    if (pageNumber !== currentPage) {
+      setCurrentPage(pageNumber);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
+
+  useEffect(() => {
+    if (status === "succeeded" && products.length > 0) {
+      setCurrentPage(1);
+    }
+  }, [status, products.length]);
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl text-primary justify-center text-center font-bold mb-4 mt-8">
         Products Available
       </h1>
+
       {status === "loading" && (
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
@@ -61,42 +93,39 @@ export default function Page() {
       {status === "failed" && <p>Error: {error}</p>}
 
       {status === "succeeded" && (
-        <div className="overflow-hidden relative">
+        <div>
           <div
-            className={`flex transition-transform duration-500 ease-in-out`}
-            style={{
-              transform: `translateX(-${(currentPage - 1) * 100}%)`,
-            }}
+            className={`grid gap-4 ${numberOfColumns === 1
+              ? "grid-cols-1"
+              : numberOfColumns === 2
+                ? "grid-cols-2"
+                : numberOfColumns === 3
+                  ? "grid-cols-3"
+                  : "grid-cols-4"
+              }`}
           >
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className="min-w-[100%] sm:min-w-[50%] md:min-w-[33.33%] lg:min-w-[25%] p-2"
-              >
-                <ProductCard product={product} />
-              </div>
+            {currentProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         </div>
       )}
 
       {status === "succeeded" && totalPages > 1 && (
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center my-4">
           {Array.from({ length: totalPages }, (_, i) => (
             <button
               key={i + 1}
               onClick={() => paginate(i + 1)}
-              className={`mx-1 px-3 py-2 rounded-lg ${
-                currentPage === i + 1
-                  ? "bg-primary text-black"
-                  : "bg-transparent text-primary"
-              } hover:bg-hover hover:text-black transition-all duration-300`}
+              className={`mx-1 px-3 py-2 rounded-lg ${currentPage === i + 1 ? "bg-primary text-black" : "bg-transparent text-primary"} 
+              hover:bg-hover hover:text-black transition-all duration-300`}
             >
               {i + 1}
             </button>
           ))}
         </div>
       )}
+
     </div>
   );
 }

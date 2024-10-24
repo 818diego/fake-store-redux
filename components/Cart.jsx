@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import {
@@ -7,6 +8,8 @@ import {
     decrementQuantity,
     removeFromCart,
 } from "@/store/slices/cartSlices";
+import CartItem from "@/components/CartItem";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function Cart({ onClose }) {
     const dispatch = useDispatch();
@@ -14,6 +17,7 @@ export default function Cart({ onClose }) {
     const router = useRouter();
     const [isVisible, setIsVisible] = useState(false);
     const cartRef = useRef(null);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         setIsVisible(true);
@@ -37,9 +41,18 @@ export default function Cart({ onClose }) {
 
     const handleCheckoutClick = () => {
         if (cartItems.length > 0) {
-            router.push("/checkout");
+            setLoading(true);
+            setTimeout(() => {
+                setLoading(false);
+                handleClose();
+                router.push("/checkout");
+            }, 1000);
         }
     };
+
+    const totalAmount = cartItems
+        .reduce((total, item) => total + item.price * item.quantity, 0)
+        .toFixed(2);
 
     return (
         <div
@@ -48,98 +61,61 @@ export default function Cart({ onClose }) {
             } duration-300 ease-in-out`}>
             <div
                 ref={cartRef}
-                className="bg-white shadow-lg shadow-gray-400 w-[320px] max-w-full h-full max-h-[95vh] m-4 rounded-lg overflow-hidden flex flex-col">
-                <div className="flex justify-between items-center p-4 border-b border-gray-200">
-                    <h2 className="text-xl font-semibold text-gray-800">
+                className="bg-secondary shadow-lg w-[320px] max-w-full h-2/1 m-4 rounded-lg overflow-hidden flex flex-col relative">
+                {loading && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                        <LoadingSpinner />
+                    </div>
+                )}
+                <div className="flex justify-between items-center p-4 border-b border-gray-700">
+                    <h2 className="text-xl font-semibold text-primary">
                         Shopping Cart
                     </h2>
                     <button
-                        className="text-gray-400 hover:text-gray-600"
+                        className="text-gray-400 hover:text-primary"
                         onClick={handleClose}>
                         ✕
                     </button>
                 </div>
                 <div className="p-4 flex-1 overflow-auto">
                     {cartItems.length === 0 ? (
-                        <p className="text-gray-500">Your cart is empty.</p>
+                        <p className="text-gray-400">Your cart is empty.</p>
                     ) : (
                         <ul className="space-y-4">
                             {cartItems.map((item) => (
-                                <li
+                                <CartItem
                                     key={item.id}
-                                    className="flex justify-between items-center">
-                                    <div className="flex items-center">
-                                        <img
-                                            src={item.image}
-                                            alt={item.title}
-                                            className="w-12 h-12 object-cover rounded-lg"
-                                        />
-                                        <div className="ml-4">
-                                            <p className="text-gray-800 font-medium">
-                                                {item.title}
-                                            </p>
-                                            <p className="text-gray-500">{`$${item.price.toFixed(
-                                                2
-                                            )}`}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            onClick={() =>
-                                                dispatch(
-                                                    decrementQuantity(item.id)
-                                                )
-                                            }
-                                            className="text-gray-700 hover:text-gray-900 bg-gray-200 px-2 rounded">
-                                            -
-                                        </button>
-                                        <p className="text-sm font-medium text-gray-700">
-                                            {item.quantity}
-                                        </p>
-                                        <button
-                                            onClick={() =>
-                                                dispatch(
-                                                    incrementQuantity(item.id)
-                                                )
-                                            }
-                                            className="text-gray-700 hover:text-gray-900 bg-gray-200 px-2 rounded">
-                                            +
-                                        </button>
-                                        <button
-                                            onClick={() =>
-                                                dispatch(
-                                                    removeFromCart(item.id)
-                                                )
-                                            }
-                                            className="text-red-600 hover:text-red-800">
-                                            🗑️
-                                        </button>
-                                    </div>
-                                </li>
+                                    item={item}
+                                    onIncrement={() =>
+                                        dispatch(incrementQuantity(item.id))
+                                    }
+                                    onDecrement={() =>
+                                        dispatch(decrementQuantity(item.id))
+                                    }
+                                    onRemove={() =>
+                                        dispatch(removeFromCart(item.id))
+                                    }
+                                />
                             ))}
                         </ul>
                     )}
                 </div>
                 {cartItems.length > 0 && (
-                    <div className="p-4 border-t border-gray-200">
+                    <div className="p-4 border-t border-gray-700">
                         <div className="flex justify-between items-center mb-4">
-                            <span className="text-lg font-medium text-gray-800">
+                            <span className="text-lg font-medium text-primary">
                                 Total
                             </span>
-                            <span className="text-lg font-medium text-gray-800">
-                                {`$${cartItems
-                                    .reduce(
-                                        (total, item) =>
-                                            total + item.price * item.quantity,
-                                        0
-                                    )
-                                    .toFixed(2)}`}
+                            <span className="text-lg font-medium text-primary">
+                                ${totalAmount}
                             </span>
                         </div>
                         <button
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
-                            onClick={handleCheckoutClick}>
-                            Checkout
+                            className="w-full bg-primary hover:bg-hover text-black font-bold py-2 px-4 rounded-lg"
+                            onClick={handleCheckoutClick}
+                            disabled={loading} // Deshabilitar el botón durante la carga
+                        >
+                            {loading ? "Processing..." : "Checkout"}
                         </button>
                     </div>
                 )}

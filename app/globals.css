@@ -45,3 +45,18 @@
       transform: scale(1);
   }
 }
+
+::-webkit-scrollbar {
+  width: 5px;
+  padding: 2px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #93ff12;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: trabnsparent;
+}
+
