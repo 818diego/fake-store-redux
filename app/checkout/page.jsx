@@ -1,7 +1,8 @@
 "use client";
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
+import { clearCart } from "@/store/slices/cartSlices";
 
 const Checkout = () => {
     const cartItems = useSelector((state) => state.cart.items);
@@ -9,75 +10,127 @@ const Checkout = () => {
         .reduce((sum, item) => sum + item.price * item.quantity, 0)
         .toFixed(2);
     const router = useRouter();
+    const dispatch = useDispatch();
 
     const [formData, setFormData] = useState({
         name: "",
         address: "",
         paymentMethod: "",
+        cardType: "",
         cardNumber: "",
         expirationDate: "",
         cvv: "",
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState({});
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+        setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    };
+
+    const validateCardNumber = (number) => /^\d{16}$/.test(number);
+
+    const validateExpirationDate = (expDate) => {
+        const [month, year] = expDate.split("/").map(Number);
+        if (!month || !year || month < 1 || month > 12) return false;
+
+        const currentYear = new Date().getFullYear() % 100;
+        const currentMonth = new Date().getMonth() + 1;
+        return (
+            year > currentYear ||
+            (year === currentYear && month >= currentMonth)
+        );
+    };
+
+    const validateForm = () => {
+        const errors = {};
+
+        if (!formData.name) errors.name = "Por favor, ingresa tu nombre.";
+        if (!formData.address)
+            errors.address = "Por favor, ingresa tu dirección.";
+        if (!formData.paymentMethod)
+            errors.paymentMethod = "Selecciona un método de pago.";
+
+        if (formData.paymentMethod === "credit-card") {
+            if (!formData.cardType)
+                errors.cardType = "Selecciona el tipo de tarjeta.";
+            if (!validateCardNumber(formData.cardNumber)) {
+                errors.cardNumber =
+                    "Número de tarjeta inválido. Debe contener 16 dígitos.";
+            }
+            if (!validateExpirationDate(formData.expirationDate)) {
+                errors.expirationDate =
+                    "Fecha de expiración inválida o vencida.";
+            }
+            if (!/^\d{3,4}$/.test(formData.cvv)) {
+                errors.cvv = "CVV inválido. Debe tener 3 o 4 dígitos.";
+            }
+        }
+
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
     };
 
     const handleCheckout = async (e) => {
         e.preventDefault();
         setError("");
 
-        if (!formData.name || !formData.address || !formData.paymentMethod) {
-            setError("Todos los campos son obligatorios.");
-            return;
-        }
-
-        if (formData.paymentMethod === "credit-card") {
-            if (
-                !formData.cardNumber ||
-                !formData.expirationDate ||
-                !formData.cvv
-            ) {
-                setError("Por favor, complete los datos de su tarjeta.");
-                return;
-            }
-        }
+        if (!validateForm()) return;
 
         setIsLoading(true);
 
         try {
-            console.log("Datos del cliente:", formData);
-            console.log("Productos:", cartItems);
+            const token = localStorage.getItem("token");
+            const response = await fetch("/api/checkout", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    items: cartItems,
+                    totalAmount,
+                    name: formData.name,
+                    address: formData.address,
+                    paymentMethod: formData.paymentMethod,
+                    cardType: formData.cardType,
+                    cardNumber: `**** **** **** ${formData.cardNumber.slice(
+                        -4
+                    )}`, // Enmascarar número
+                }),
+            });
 
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            if (!response.ok) {
+                const { error } = await response.json();
+                setError(error || "Error al procesar el pago.");
+            } else {
+                localStorage.setItem(
+                    "orderSummary",
+                    JSON.stringify({
+                        items: cartItems,
+                        totalAmount,
+                        name: formData.name,
+                        address: formData.address,
+                        paymentMethod: formData.paymentMethod,
+                        cardType: formData.cardType,
+                        cardNumber: `**** **** **** ${formData.cardNumber.slice(
+                            -4
+                        )}`,
+                    })
+                );
 
-            router.push("/thank-you");
+                dispatch(clearCart());
+                router.push("/thank-you");
+            }
         } catch (err) {
             setError("Hubo un error al procesar el pago. Inténtalo de nuevo.");
         } finally {
             setIsLoading(false);
         }
     };
-
-    if (cartItems.length === 0) {
-        return (
-            <div className="min-h-screen bg-secondary flex items-center justify-center p-6">
-                <div className="bg-tercery text-primary p-8 rounded-lg shadow-lg">
-                    <h2 className="text-2xl font-semibold mb-4">
-                        Tu carrito está vacío
-                    </h2>
-                    <button
-                        className="bg-primary hover:bg-hover text-black font-bold py-2 px-4 rounded"
-                        onClick={() => router.push("/products")}>
-                        Volver a la tienda
-                    </button>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-secondary flex items-center justify-center p-6">
@@ -129,6 +182,12 @@ const Checkout = () => {
                         className="w-full p-4 bg-secondary border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
                         required
                     />
+                    {fieldErrors.name && (
+                        <p className="text-red-500 text-sm">
+                            {fieldErrors.name}
+                        </p>
+                    )}
+
                     <input
                         type="text"
                         name="address"
@@ -138,6 +197,12 @@ const Checkout = () => {
                         className="w-full p-4 bg-secondary border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
                         required
                     />
+                    {fieldErrors.address && (
+                        <p className="text-red-500 text-sm">
+                            {fieldErrors.address}
+                        </p>
+                    )}
+
                     <select
                         name="paymentMethod"
                         value={formData.paymentMethod}
@@ -148,18 +213,45 @@ const Checkout = () => {
                         <option value="credit-card">Tarjeta de Crédito</option>
                         <option value="paypal">PayPal</option>
                     </select>
+                    {fieldErrors.paymentMethod && (
+                        <p className="text-red-500 text-sm">
+                            {fieldErrors.paymentMethod}
+                        </p>
+                    )}
 
                     {formData.paymentMethod === "credit-card" && (
                         <>
+                            <select
+                                name="cardType"
+                                value={formData.cardType}
+                                onChange={handleInputChange}
+                                className="w-full p-4 bg-secondary border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
+                                required>
+                                <option value="">Tipo de tarjeta</option>
+                                <option value="visa">Visa</option>
+                                <option value="mastercard">MasterCard</option>
+                            </select>
+                            {fieldErrors.cardType && (
+                                <p className="text-red-500 text-sm">
+                                    {fieldErrors.cardType}
+                                </p>
+                            )}
+
                             <input
                                 type="text"
                                 name="cardNumber"
-                                placeholder="Número de tarjeta"
+                                placeholder="Número de tarjeta (16 dígitos)"
                                 value={formData.cardNumber}
                                 onChange={handleInputChange}
                                 className="w-full p-4 bg-secondary border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white"
                                 required
                             />
+                            {fieldErrors.cardNumber && (
+                                <p className="text-red-500 text-sm">
+                                    {fieldErrors.cardNumber}
+                                </p>
+                            )}
+
                             <div className="flex space-x-4">
                                 <input
                                     type="text"
@@ -180,21 +272,17 @@ const Checkout = () => {
                                     required
                                 />
                             </div>
+                            {fieldErrors.expirationDate && (
+                                <p className="text-red-500 text-sm">
+                                    {fieldErrors.expirationDate}
+                                </p>
+                            )}
+                            {fieldErrors.cvv && (
+                                <p className="text-red-500 text-sm">
+                                    {fieldErrors.cvv}
+                                </p>
+                            )}
                         </>
-                    )}
-
-                    {formData.paymentMethod === "paypal" && (
-                        <button
-                            type="button"
-                            onClick={handleCheckout}
-                            disabled={isLoading}
-                            className={`w-full py-4 rounded-lg font-semibold text-black ${
-                                isLoading
-                                    ? "bg-gray-500 cursor-not-allowed"
-                                    : "bg-primary hover:bg-hover"
-                            } transition duration-300`}>
-                            {isLoading ? "Procesando..." : "Pagar con PayPal"}
-                        </button>
                     )}
 
                     {error && (
@@ -202,19 +290,16 @@ const Checkout = () => {
                             {error}
                         </p>
                     )}
-
-                    {formData.paymentMethod === "credit-card" && (
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className={`w-full py-4 rounded-lg font-semibold text-black ${
-                                isLoading
-                                    ? "bg-gray-500 cursor-not-allowed"
-                                    : "bg-primary hover:bg-hover"
-                            } transition duration-300`}>
-                            {isLoading ? "Procesando..." : "Realizar Pago"}
-                        </button>
-                    )}
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className={`w-full py-4 rounded-lg font-semibold text-black ${
+                            isLoading
+                                ? "bg-gray-500 cursor-not-allowed"
+                                : "bg-primary hover:bg-hover"
+                        } transition duration-300`}>
+                        {isLoading ? "Procesando..." : "Realizar Pago"}
+                    </button>
                 </form>
             </div>
         </div>

@@ -1,7 +1,25 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const loadCartFromLocalStorage = () => {
+  try {
+    const serializedCart = localStorage.getItem("cart");
+    return serializedCart ? JSON.parse(serializedCart) : [];
+  } catch (error) {
+    console.error("Error al cargar el carrito de localStorage:", error);
+    return [];
+  }
+};
+
+const saveCartToLocalStorage = (cart) => {
+  try {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  } catch (error) {
+    console.error("Error al guardar el carrito en localStorage:", error);
+  }
+};
+
 const initialState = {
-  items: [],
+  items: loadCartFromLocalStorage(),
   isCartOpen: false,
 };
 
@@ -18,20 +36,24 @@ const cartSlice = createSlice({
       } else {
         state.items.push({ ...action.payload, quantity: 1 });
       }
+      saveCartToLocalStorage(state.items);
     },
     removeFromCart: (state, action) => {
       state.items = state.items.filter((item) => item.id !== action.payload);
+      saveCartToLocalStorage(state.items);
     },
     incrementQuantity: (state, action) => {
       const item = state.items.find((item) => item.id === action.payload);
       if (item) {
         item.quantity += 1;
+        saveCartToLocalStorage(state.items);
       }
     },
     decrementQuantity: (state, action) => {
       const item = state.items.find((item) => item.id === action.payload);
       if (item && item.quantity > 1) {
         item.quantity -= 1;
+        saveCartToLocalStorage(state.items);
       }
     },
     toggleCart: (state) => {
@@ -39,6 +61,10 @@ const cartSlice = createSlice({
     },
     closeCart: (state) => {
       state.isCartOpen = false;
+    },
+    clearCart: (state) => {
+      state.items = [];
+      localStorage.removeItem("cart");
     },
   },
 });
@@ -50,6 +76,7 @@ export const {
   decrementQuantity,
   toggleCart,
   closeCart,
+  clearCart,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

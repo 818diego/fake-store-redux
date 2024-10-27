@@ -3,8 +3,9 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProductsByCategory } from "@/store/slices/productSlices";
-import ProductCard from "@/components/productCard";
+import ProductCardCategory from "@/components/ProductCardCategory";
 import LoadingSpinner from "@/components/loadingSpinner";
+import { toast } from "react-toastify";
 
 export default function CategoryPage({ params }) {
     const { category } = params;
@@ -20,9 +21,15 @@ export default function CategoryPage({ params }) {
         }
     }, [category, dispatch]);
 
+    useEffect(() => {
+        if (categoryStatus === "failed") {
+            toast.error("Error al cargar los productos de esta categoría.");
+        }
+    }, [categoryStatus]);
+
     if (categoryStatus === "loading") {
         return (
-            <LoadingScreen message={`Loading products for ${category}...`} />
+            <LoadingScreen message={`Cargando productos para ${category}...`} />
         );
     }
 
@@ -31,42 +38,43 @@ export default function CategoryPage({ params }) {
     }
 
     return (
-        <div className="min-h-screen p-6">
-            <h1 className="text-3xl font-bold text-primary mb-6 capitalize">
-                Category: {category}
-            </h1>
-            {filteredItems.length === 0 ? (
-                <p className="text-gray-400">
-                    No products found in this category.
-                </p>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {filteredItems.map((product) => (
-                        <div
-                            key={product.id}
-                            className=" rounded-lg transition-shadow">
-                            <ProductCard product={product} />
-                        </div>
-                    ))}
-                </div>
-            )}
+        <div className="min-h-screen bg-secondary">
+            <div className="max-w-screen-3xl mx-64 p-8">
+                <h1 className="text-4xl font-extrabold text-primary mb-10 capitalize text-center">
+                    Categoría: {category}
+                </h1>
+                {filteredItems.length === 0 ? (
+                    <p className="text-gray-400 text-center text-xl mt-10">
+                        No se encontraron productos en esta categoría.
+                    </p>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {filteredItems.map((product) => (
+                            <ProductCardCategory
+                                key={product.id}
+                                product={product}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
 
 function LoadingScreen({ message }) {
     return (
-        <div className="flex flex-col justify-center items-center h-screen">
+        <div className="flex flex-col justify-center items-center h-screen bg-secondary">
             <LoadingSpinner />
-            {/* <p className="text-gray-400 text-lg mt-4">{message}</p> */}
+            <p className="text-gray-300 text-lg mt-4">{message}</p>
         </div>
     );
 }
 
 function ErrorMessage({ message }) {
     return (
-        <div className="flex justify-center items-center h-screen">
-            <p className="text-red-500 text-lg">{message}</p>
+        <div className="flex justify-center items-center h-screen bg-secondary">
+            <p className="text-red-500 text-2xl font-semibold">{message}</p>
         </div>
     );
 }

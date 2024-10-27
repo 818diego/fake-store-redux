@@ -3,16 +3,19 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BsCart2 } from "react-icons/bs";
 import Cart from "./Cart";
+import ModalLogout from "./ModalLogout";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchCategories } from "@/store/slices/categorySlices";
 import { fetchProductsByCategory } from "@/store/slices/productSlices";
+import { logout, checkAuth } from "@/store/slices/authSlice";
 
 export default function Navbar() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const dispatch = useDispatch();
 
-    // Obtener las categorías y los productos desde el estado de Redux
+    const { isAuthenticated, username } = useSelector((state) => state.auth);
     const cartItems = useSelector((state) => state.cart.items);
     const totalItems = cartItems.reduce(
         (total, item) => total + item.quantity,
@@ -20,6 +23,10 @@ export default function Navbar() {
     );
     const categories = useSelector((state) => state.categories.items);
     const categoriesStatus = useSelector((state) => state.categories.status);
+
+    useEffect(() => {
+        dispatch(checkAuth());
+    }, [dispatch]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -39,6 +46,19 @@ export default function Navbar() {
 
     const handleCategoryClick = (category) => {
         dispatch(fetchProductsByCategory(category));
+    };
+
+    const handleLogout = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = () => {
+        dispatch(logout());
+        setShowLogoutConfirm(false);
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutConfirm(false);
     };
 
     const toggleModal = () => {
@@ -61,12 +81,17 @@ export default function Navbar() {
                     </h1>
                     <div className="flex space-x-6">
                         {categories.map((category) => (
-                            <span key={category} className="text-primary hover:text-hover">
+                            <span
+                                key={category}
+                                className="text-primary hover:text-hover">
                                 <Link href={`/category/${category}`}>
                                     {category}
                                 </Link>
                             </span>
                         ))}
+                    </div>
+
+                    <div className="flex space-x-6">
                         <button
                             onClick={toggleModal}
                             className="relative text-primary hover:text-hover">
@@ -77,6 +102,29 @@ export default function Navbar() {
                                 </span>
                             )}
                         </button>
+                        {isAuthenticated ? (
+                            <>
+                                <span className="text-primary">{username}</span>
+                                <button
+                                    onClick={handleLogout}
+                                    className="text-primary hover:text-hover">
+                                    Logout
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    href="/auth/login"
+                                    className="text-primary hover:text-hover">
+                                    Login
+                                </Link>
+                                <Link
+                                    href="/auth/register"
+                                    className="text-primary hover:text-hover">
+                                    Register
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -85,6 +133,13 @@ export default function Navbar() {
                 <div className="fixed inset-0 flex items-center justify-center z-50">
                     <Cart onClose={() => setIsModalOpen(false)} />
                 </div>
+            )}
+
+            {showLogoutConfirm && (
+                <ModalLogout
+                    onConfirm={confirmLogout}
+                    onCancel={cancelLogout}
+                />
             )}
         </>
     );

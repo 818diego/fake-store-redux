@@ -1,6 +1,12 @@
 import React from "react";
+import { toast } from "react-toastify";
 
 export default function CartItem({ item, onIncrement, onDecrement, onRemove }) {
+    const handleRemove = () => {
+        onRemove();
+        toast.info("Producto eliminado del carrito.");
+    };
+
     return (
         <li className="flex justify-between items-center">
             <div className="flex items-center">
@@ -31,7 +37,7 @@ export default function CartItem({ item, onIncrement, onDecrement, onRemove }) {
                     +
                 </button>
                 <button
-                    onClick={onRemove}
+                    onClick={handleRemove}
                     className="text-red-500 hover:text-red-700">
                     🗑️
                 </button>

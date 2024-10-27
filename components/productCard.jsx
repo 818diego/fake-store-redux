@@ -1,19 +1,29 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "@/store/slices/cartSlices";
+import { toast } from "react-toastify";
 import Link from "next/link";
 import Image from "next/image";
 
-export default function ProductCard({ product, showToast }) {
+export default function ProductCard({ product }) {
     const dispatch = useDispatch();
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleAddToCart = () => {
-        setIsLoading(true);
+    const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
+    const handleAddToCart = () => {
+        if (!isAuthenticated) {
+            toast.info(
+                "Por favor, inicia sesión para agregar productos al carrito."
+            );
+            return;
+        }
+
+        setIsLoading(true);
         setTimeout(() => {
             dispatch(addToCart(product));
             setIsLoading(false);
+            toast.success("Producto agregado al carrito!");
         }, 1000);
     };
 

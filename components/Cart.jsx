@@ -9,7 +9,7 @@ import {
     removeFromCart,
 } from "@/store/slices/cartSlices";
 import CartItem from "@/components/CartItem";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import LoadingSpinner from "@/components/loadingSpinner";
 
 export default function Cart({ onClose }) {
     const dispatch = useDispatch();
@@ -32,6 +32,7 @@ export default function Cart({ onClose }) {
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleClose = () => {
