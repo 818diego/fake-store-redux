@@ -4,9 +4,12 @@ export const fetchProducts = createAsyncThunk(
   "products/fetchProducts",
   async () => {
     const response = await fetch("https://fakestoreapi.com/products");
-    return response.json();
+    const data = await response.json(); // Resolver la promesa aquí
+    console.log(data); // Imprimir los datos ya parseados
+    return data; // Retornar los datos
   }
 );
+
 
 export const fetchProductsByCategory = createAsyncThunk(
   "products/fetchProductsByCategory",

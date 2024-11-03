@@ -1,12 +1,11 @@
-"use client";
-
-import React, { useState, useEffect, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import {
     incrementQuantity,
     decrementQuantity,
     removeFromCart,
+    fetchCartItems,
 } from "@/store/slices/cartSlices";
 import CartItem from "@/components/CartItem";
 import LoadingSpinner from "@/components/loadingSpinner";
@@ -14,12 +13,17 @@ import LoadingSpinner from "@/components/loadingSpinner";
 export default function Cart({ onClose }) {
     const dispatch = useDispatch();
     const cartItems = useSelector((state) => state.cart.items);
+    const cartStatus = useSelector((state) => state.cart.status);
+    const userId = useSelector((state) => state.auth.userId);
     const router = useRouter();
     const [isVisible, setIsVisible] = useState(false);
     const cartRef = useRef(null);
-    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        if (userId) {
+            // Cargar artículos del carrito al abrir el componente
+            dispatch(fetchCartItems(userId));
+        }
         setIsVisible(true);
 
         const handleClickOutside = (event) => {
@@ -32,8 +36,7 @@ export default function Cart({ onClose }) {
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [dispatch, userId]);
 
     const handleClose = () => {
         setIsVisible(false);
@@ -42,17 +45,15 @@ export default function Cart({ onClose }) {
 
     const handleCheckoutClick = () => {
         if (cartItems.length > 0) {
-            setLoading(true);
-            setTimeout(() => {
-                setLoading(false);
-                handleClose();
-                router.push("/checkout");
-            }, 1000);
+            router.push("/checkout");
         }
     };
 
     const totalAmount = cartItems
-        .reduce((total, item) => total + item.price * item.quantity, 0)
+        .reduce(
+            (total, item) => total + (item.price ?? 0) * (item.quantity ?? 1),
+            0
+        )
         .toFixed(2);
 
     return (
@@ -63,7 +64,7 @@ export default function Cart({ onClose }) {
             <div
                 ref={cartRef}
                 className="bg-secondary shadow-lg w-[320px] max-w-full h-2/1 m-4 rounded-lg overflow-hidden flex flex-col relative">
-                {loading && (
+                {cartStatus === "loading" && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
                         <LoadingSpinner />
                     </div>
@@ -88,13 +89,17 @@ export default function Cart({ onClose }) {
                                     key={item.id}
                                     item={item}
                                     onIncrement={() =>
-                                        dispatch(incrementQuantity(item.id))
+                                        dispatch(
+                                            incrementQuantity(item.productId)
+                                        )
                                     }
                                     onDecrement={() =>
-                                        dispatch(decrementQuantity(item.id))
+                                        dispatch(
+                                            decrementQuantity(item.productId)
+                                        )
                                     }
                                     onRemove={() =>
-                                        dispatch(removeFromCart(item.id))
+                                        dispatch(removeFromCart(item.productId))
                                     }
                                 />
                             ))}
@@ -114,9 +119,10 @@ export default function Cart({ onClose }) {
                         <button
                             className="w-full bg-primary hover:bg-hover text-black font-bold py-2 px-4 rounded-lg"
                             onClick={handleCheckoutClick}
-                            disabled={loading} // Deshabilitar el botón durante la carga
-                        >
-                            {loading ? "Processing..." : "Checkout"}
+                            disabled={cartStatus === "loading"}>
+                            {cartStatus === "loading"
+                                ? "Processing..."
+                                : "Checkout"}
                         </button>
                     </div>
                 )}

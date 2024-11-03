@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
-import { clearCart } from "@/store/slices/cartSlices";
+import { clearCartItems } from "@/store/slices/cartSlices";
 
 const Checkout = () => {
     const cartItems = useSelector((state) => state.cart.items);
@@ -77,11 +77,11 @@ const Checkout = () => {
     const handleCheckout = async (e) => {
         e.preventDefault();
         setError("");
-
+    
         if (!validateForm()) return;
-
+    
         setIsLoading(true);
-
+    
         try {
             const token = localStorage.getItem("token");
             const response = await fetch("/api/checkout", {
@@ -97,12 +97,10 @@ const Checkout = () => {
                     address: formData.address,
                     paymentMethod: formData.paymentMethod,
                     cardType: formData.cardType,
-                    cardNumber: `**** **** **** ${formData.cardNumber.slice(
-                        -4
-                    )}`, // Enmascarar número
+                    cardNumber: `**** **** **** ${formData.cardNumber.slice(-4)}`,
                 }),
             });
-
+    
             if (!response.ok) {
                 const { error } = await response.json();
                 setError(error || "Error al procesar el pago.");
@@ -116,13 +114,12 @@ const Checkout = () => {
                         address: formData.address,
                         paymentMethod: formData.paymentMethod,
                         cardType: formData.cardType,
-                        cardNumber: `**** **** **** ${formData.cardNumber.slice(
-                            -4
-                        )}`,
+                        cardNumber: `**** **** **** ${formData.cardNumber.slice(-4)}`,
                     })
                 );
-
-                dispatch(clearCart());
+    
+                // Llama a clearCartItems y espera su finalización
+                await dispatch(clearCartItems()).unwrap();  // Asegúrate de que clearCartItems se complete
                 router.push("/thank-you");
             }
         } catch (err) {

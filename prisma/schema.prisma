@@ -13,6 +13,7 @@ model User {
   username  String   @unique
   password  String
   orders    Order[]
+  cartItems CartItem[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -25,4 +26,17 @@ model Order {
   totalAmount Float
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  productId Int      
+  title     String
+  price     Float
+  image     String
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

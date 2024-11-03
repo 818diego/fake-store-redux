@@ -3,12 +3,12 @@ import { toast } from "react-toastify";
 
 export default function CartItem({ item, onIncrement, onDecrement, onRemove }) {
     const handleRemove = () => {
-        onRemove();
+        onRemove(item.productId); // Llama a la acción para eliminar el item
         toast.info("Producto eliminado del carrito.");
     };
 
     return (
-        <li className="flex justify-between items-center">
+        <li className="flex justify-between items-center py-2 border-b border-gray-700">
             <div className="flex items-center">
                 <img
                     src={item.image}
@@ -17,27 +17,24 @@ export default function CartItem({ item, onIncrement, onDecrement, onRemove }) {
                 />
                 <div className="ml-4">
                     <p className="text-primary font-medium">{item.title}</p>
-                    <p className="text-gray-400">{`$${item.price.toFixed(
-                        2
-                    )}`}</p>
                 </div>
             </div>
             <div className="flex items-center space-x-2">
                 <button
-                    onClick={onDecrement}
+                    onClick={() => onDecrement(item.productId)} // Llama a la acción para decrementar la cantidad
                     className="text-black hover:text-primary bg-tercery px-2 rounded">
                     -
                 </button>
                 <p className="text-sm font-medium text-primary">
-                    {item.quantity}
+                    {item.quantity ?? 1}
                 </p>
                 <button
-                    onClick={onIncrement}
+                    onClick={() => onIncrement(item.productId)} // Llama a la acción para incrementar la cantidad
                     className="text-black hover:text-primary bg-tercery px-2 rounded">
                     +
                 </button>
                 <button
-                    onClick={handleRemove}
+                    onClick={handleRemove} // Llama a la acción para eliminar el item
                     className="text-red-500 hover:text-red-700">
                     🗑️
                 </button>

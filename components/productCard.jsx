@@ -10,8 +10,9 @@ export default function ProductCard({ product }) {
     const [isLoading, setIsLoading] = useState(false);
 
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+    const userId = useSelector((state) => state.auth.userId);
 
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
         if (!isAuthenticated) {
             toast.info(
                 "Por favor, inicia sesión para agregar productos al carrito."
@@ -20,11 +21,28 @@ export default function ProductCard({ product }) {
         }
 
         setIsLoading(true);
-        setTimeout(() => {
-            dispatch(addToCart(product));
-            setIsLoading(false);
+        try {
+            if (!userId || !product || !product.id) {
+                throw new Error("Datos de usuario o producto faltantes.");
+            }
+
+            const productData = {
+                userId,
+                productId: product.id,
+                title: product.title,
+                price: product.price,
+                image: product.image,
+                quantity: 1,
+            };
+
+            await dispatch(addToCart(productData)).unwrap();
             toast.success("Producto agregado al carrito!");
-        }, 1000);
+        } catch (error) {
+            console.error("Error al agregar al carrito:", error);
+            toast.error("Error al agregar el producto al carrito.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
