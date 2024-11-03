@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { login } from "@/store/slices/authSlice";
 import { toast } from "react-toastify";
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 
 function LoginPage() {
     const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ function LoginPage() {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
+    const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
     const dispatch = useDispatch();
 
@@ -90,27 +92,41 @@ function LoginPage() {
                     Iniciar sesión
                 </h1>
 
-                <input
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="Correo electrónico"
-                    className="w-full p-3 mb-2 bg-transparent border border-primary rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-hover transition-all"
-                />
+                {/* Campo de correo electrónico */}
+                <div className="flex items-center border border-primary rounded-lg mb-4 relative">
+                    <FaEnvelope className="text-gray-400 ml-3" />
+                    <input
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="Correo electrónico"
+                        className="w-full p-3 bg-transparent text-white placeholder-gray-400 focus:outline-none"
+                    />
+                </div>
                 {fieldErrors.email && (
                     <p className="text-red-500 text-sm mb-4">
                         {fieldErrors.email}
                     </p>
                 )}
 
-                <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Contraseña"
-                    className="w-full p-3 mb-2 bg-transparent border border-primary rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-hover transition-all"
-                />
+                {/* Campo de contraseña */}
+                <div className="flex items-center border border-primary rounded-lg mb-4 relative">
+                    <FaLock className="text-gray-400 ml-3" />
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Contraseña"
+                        className="w-full p-3 bg-transparent text-white placeholder-gray-400 focus:outline-none"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 text-gray-400 focus:outline-none">
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                </div>
                 {fieldErrors.password && (
                     <p className="text-red-500 text-sm mb-4">
                         {fieldErrors.password}

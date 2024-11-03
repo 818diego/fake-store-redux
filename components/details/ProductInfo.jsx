@@ -5,9 +5,9 @@ import { addToCart } from "@/store/slices/cartSlices";
 
 export default function ProductInfo({ product }) {
     const dispatch = useDispatch();
-    const { isAuthenticated } = useSelector((state) => state.auth);
+    const { isAuthenticated, userId } = useSelector((state) => state.auth);
 
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
         if (!isAuthenticated) {
             toast.error(
                 "Por favor, inicia sesión para añadir productos al carrito."
@@ -15,8 +15,22 @@ export default function ProductInfo({ product }) {
             return;
         }
 
-        dispatch(addToCart(product));
-        toast.success("Producto añadido al carrito.");
+        const productData = {
+            userId,
+            productId: product.id,
+            title: product.title,
+            price: product.price,
+            image: product.image,
+            quantity: 1,
+        };
+
+        try {
+            await dispatch(addToCart(productData)).unwrap();
+            toast.success("Producto añadido al carrito.");
+        } catch (error) {
+            console.error("Error al añadir al carrito:", error);
+            toast.error("Error al añadir el producto al carrito.");
+        }
     };
 
     return (

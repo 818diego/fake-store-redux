@@ -27,16 +27,32 @@ const Checkout = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+
+        let formattedValue = value;
+        if (name === "cardNumber") {
+            // Auto-formatear el número de tarjeta
+            formattedValue = value.replace(/\D/g, "").slice(0, 16);
+            formattedValue = formattedValue.replace(/(\d{4})(?=\d)/g, "$1 ");
+        } else if (name === "expirationDate") {
+            // Auto-formatear la fecha de expiración
+            formattedValue = value.replace(/\D/g, "").slice(0, 4);
+            if (formattedValue.length > 2) {
+                formattedValue =
+                    formattedValue.slice(0, 2) + "/" + formattedValue.slice(2);
+            }
+        } else if (name === "cvv") {
+            formattedValue = value.replace(/\D/g, "").slice(0, 3);
+        }
+
+        setFormData((prev) => ({ ...prev, [name]: formattedValue }));
         setFieldErrors((prev) => ({ ...prev, [name]: "" }));
     };
 
-    const validateCardNumber = (number) => /^\d{16}$/.test(number);
-
+    const validateCardNumber = (number) =>
+        /^\d{16}$/.test(number.replace(/\s/g, ""));
     const validateExpirationDate = (expDate) => {
         const [month, year] = expDate.split("/").map(Number);
         if (!month || !year || month < 1 || month > 12) return false;
-
         const currentYear = new Date().getFullYear() % 100;
         const currentMonth = new Date().getMonth() + 1;
         return (
@@ -47,29 +63,23 @@ const Checkout = () => {
 
     const validateForm = () => {
         const errors = {};
-
         if (!formData.name) errors.name = "Por favor, ingresa tu nombre.";
         if (!formData.address)
             errors.address = "Por favor, ingresa tu dirección.";
         if (!formData.paymentMethod)
             errors.paymentMethod = "Selecciona un método de pago.";
-
         if (formData.paymentMethod === "credit-card") {
             if (!formData.cardType)
                 errors.cardType = "Selecciona el tipo de tarjeta.";
-            if (!validateCardNumber(formData.cardNumber)) {
+            if (!validateCardNumber(formData.cardNumber))
                 errors.cardNumber =
                     "Número de tarjeta inválido. Debe contener 16 dígitos.";
-            }
-            if (!validateExpirationDate(formData.expirationDate)) {
+            if (!validateExpirationDate(formData.expirationDate))
                 errors.expirationDate =
                     "Fecha de expiración inválida o vencida.";
-            }
-            if (!/^\d{3,4}$/.test(formData.cvv)) {
-                errors.cvv = "CVV inválido. Debe tener 3 o 4 dígitos.";
-            }
+            if (!/^\d{3}$/.test(formData.cvv))
+                errors.cvv = "CVV inválido. Debe tener 3 dígitos.";
         }
-
         setFieldErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -77,11 +87,11 @@ const Checkout = () => {
     const handleCheckout = async (e) => {
         e.preventDefault();
         setError("");
-    
+
         if (!validateForm()) return;
-    
+
         setIsLoading(true);
-    
+
         try {
             const token = localStorage.getItem("token");
             const response = await fetch("/api/checkout", {
@@ -97,10 +107,12 @@ const Checkout = () => {
                     address: formData.address,
                     paymentMethod: formData.paymentMethod,
                     cardType: formData.cardType,
-                    cardNumber: `**** **** **** ${formData.cardNumber.slice(-4)}`,
+                    cardNumber: `**** **** **** ${formData.cardNumber.slice(
+                        -4
+                    )}`,
                 }),
             });
-    
+
             if (!response.ok) {
                 const { error } = await response.json();
                 setError(error || "Error al procesar el pago.");
@@ -114,12 +126,14 @@ const Checkout = () => {
                         address: formData.address,
                         paymentMethod: formData.paymentMethod,
                         cardType: formData.cardType,
-                        cardNumber: `**** **** **** ${formData.cardNumber.slice(-4)}`,
+                        cardNumber: `**** **** **** ${formData.cardNumber.slice(
+                            -4
+                        )}`,
                     })
                 );
-    
+
                 // Llama a clearCartItems y espera su finalización
-                await dispatch(clearCartItems()).unwrap();  // Asegúrate de que clearCartItems se complete
+                await dispatch(clearCartItems()).unwrap(); // Asegúrate de que clearCartItems se complete
                 router.push("/thank-you");
             }
         } catch (err) {
